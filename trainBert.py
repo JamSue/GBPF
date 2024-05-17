@@ -130,28 +130,31 @@ def getPostiveSample(texts,labels):
     label_dict = {} # 按照标签分样本的字典
     positiveSample = [] # 对每条样本获取的正样本列表
     # 按照标签将样本分开
-    for text, label in zip(texts, labels):
+    for text, label in zip(texts, labels): 
+        label = label.item() #获取label
+        
         if label not in label_dict:
             label_dict[label] = []
+            label_dict[label].append(text)
+        else:
             label_dict[label].append(text)
     
     augmentReader = augmentDataReader(augment_data_path) # 增强样本匹配，对应texts的增强样本列表
     
-    for index,text, label in enumerate(zip(texts, labels)):
+    for index,(text, label) in enumerate(zip(texts, labels)):
+        label = label.item()
         # 对每条样本随机选取同标签或者增强样本
         if len(label_dict[label])==1: 
-            positiveSample.append(augmentReader[index]) # 如果同类标签只有原样本自身，那么选取增强样本     
+            positiveSample.append(augmentReader.getAugmentSample(text)) # 如果同类标签只有原样本自身，那么选取增强样本    
         else:
             # 获取同标签的所有样本 ,在同标签的所有样本中随机选一个不是自身的样本
-            sameLabelSamples = list(label_dict[label].values()) 
-            selectedSample = random.choice([sample for sample in sameLabelSamples if sample != text])
-            
+
+            selectedSample = random.choice([sample for sample in label_dict[label]  if sample != text])
             # 以50%的概率选取增强样本或者同标签样本
             if random.random() < 0.5:
                 positiveSample.append(random.choice(selectedSample))
             else:
-                positiveSample.append(random.choice(augmentReader[index]))
-    
+                positiveSample.append(augmentReader.getAugmentSample(text))
     return positiveSample     
 
 def getNegtiveSample(texts,labels):
@@ -159,10 +162,12 @@ def getNegtiveSample(texts,labels):
     negtiveSample = [] # 对每条样本获取的负样本列表
     # 按照标签将样本分开
     for text, label in zip(texts, labels):
+        label = label.item()
         if label not in label_dict:
             label_dict[label] = []
             label_dict[label].append(text)
-    
+        else:
+            label_dict[label].append(text)
      # 遍历每个标签的样本列表，随机选择一条与当前样本标签不同的样本
     for text, label in zip(texts, labels):
         # 在当前标签以外的标签中随机选择一个
@@ -226,7 +231,7 @@ for epoch in range(1,1+args.epoch):
             negtiveLogits  = model(negtiveFeature,label,flag=2, purity=args.purity)
             
             # dis 表示样本与增强样本的平均距离，dis_dif表示样本与其他样本的距离
-            dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1))/args.batch_size
+            dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1))
             neg_dis = torch.mean(1- F.cosine_similarity(logits, negtiveLogits , dim=1))
 
             loss =  Loss(output,center_label.long(),dis,neg_dis).to(args.cpu_device)
@@ -245,10 +250,11 @@ for epoch in range(1,1+args.epoch):
                 logging.info("###### Now is a evaluation phase, <evaluation num>:{}  #######".format(eval_num))
                 
                 with torch.no_grad():
-                    for i, (features,label)in enumerate(test_iterator):
-                        
+                    for i, (texts,label)in enumerate(test_iterator):
+                       
                         label = label.to(args.device) # size: ([64])
-                        features = features.to(args.device) # size: ([64,300])
+                        # features = features.to(args.device) # texts(bs*2)
+                        features = Tokenizer(texts, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
                         output = model(features, label, flag=-1, purity=1)        
 
                         _, pred = torch.max(output.data, 1)
@@ -276,7 +282,7 @@ for epoch in range(1,1+args.epoch):
                 logging.info('Current best acc:{:.2f}% at epoch{} --eval_num{}'.format(best_accuracy, best_acc_loc,best_eval_num_loc))
                 logging.info('Current Learning Rate: {}'.format(lr_scheduler.get_last_lr()))
                 
-    if epoch >=5:
+    if epoch >= 5:
         #从第5轮开始数据增强
         step = 0
         for batch_index,(texts,label) in enumerate(train_iterator):
@@ -321,7 +327,14 @@ for epoch in range(1,1+args.epoch):
             neg_dis = torch.mean(1- F.cosine_similarity(logits, negtiveLogits , dim=1))
 
             loss =  Loss(output,center_label.long(),dis,neg_dis).to(args.cpu_device)
-    
+
+            # 将 (ball_center,center_label)拼接 并将每条粒球数据分别压入队列中
+            ball_data = (torch.cat((ball_center.cpu().detach(), (center_label.cpu().detach()).unsqueeze(1)), dim=1)).to(args.device)
+            gbQueue.push(ball_data)
+            gbQueue.pop_if_full()
+            
+            ball_num = center_label.shape[0]
+            
             optimizer.zero_grad()  # 梯度清零
             loss.backward() # 反向传播 通过模型的反向传播函数进行传播的
             optimizer.step() # 更新模型参数
@@ -345,10 +358,11 @@ for epoch in range(1,1+args.epoch):
                         # LLP=>评估阶段，不过粒球层 用聚好的粒球最近的中心替换进行评估  
                         features = Tokenizer(texts, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
                         label = label.to(args.device)
-                        features["input_ids"] = features["input_ids"].view(args.batch_size, maxlen)  # (batch_size,seq_len)
-                        features["attention_mask"] =features["attention_mask"].view(args.batch_size, maxlen)
+                        bs = label.shape[0]
+                        features["input_ids"] = features["input_ids"].view(bs, maxlen)  # (batch_size,seq_len)
+                        features["attention_mask"] =features["attention_mask"].view(bs, maxlen)
                         if args.model=='Bert'or args.model=='XLNet':
-                            features["token_type_ids"] = features["token_type_ids"].view(args.batch_size, maxlen)  
+                            features["token_type_ids"] = features["token_type_ids"].view(bs, maxlen)  
                         output = model(features, label, flag=-1, purity=1)   
 
                         _, pred1 = torch.max(output.data, 1)

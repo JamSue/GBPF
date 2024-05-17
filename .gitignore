@@ -9,3 +9,4 @@ xlnet
 gb_data
 checkpoints
 __pycache__
+nohup.out

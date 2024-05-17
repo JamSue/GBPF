@@ -384,10 +384,7 @@ class myModel(nn.Module):
         flag: 用于标志训练、防御、是否加粒球等各个情况
         purity:聚球纯度
         """  
-        print("2222",target_label.shape) # 64 为什么是64呢
-        print("22223",target_label.device) # 64 为什么是64呢
-        print("x:",x["input_ids"].shape)
-        print("x:",x["input_ids"].device)
+        
         # print(x) （LLP:24-3-17这边需要确认roberta,xlnet三个模型的数据是否一致，好像不一致。。。）
         if args.model=='RoBERTa':
             # print(x['input_ids'].shape) # batch_size,padding_len
@@ -422,8 +419,8 @@ class myModel(nn.Module):
             origin_label = target_label
             
             # 将标签与输出拼接
-            print("origin_lable:",origin_label.shape)
-            print("data:", data.shape)
+            # print("origin_lable:",origin_label.shape)
+            # print("data:", data.shape)
             out = torch.cat((target_label.reshape(-1, 1), out), dim=1)
             
             # 为每个样本复制一个纯度

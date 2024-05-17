@@ -18,8 +18,8 @@ class TripleLoss(nn.Module):
         # loss = self.cross_entropy_loss(classes, labels) +  dis_same*0.01 - dis_dif*0.01
         entr_loss = self.cross_entropy_loss(classes, labels)
         # print("entr_loss:",entr_loss)
-        print("dis_same:",dis_same)
-        print("dis_dif:",dis_dif)
+        # print("dis_same:",dis_same)
+        # print("dis_dif:",dis_dif)
         loss = self.cross_entropy_loss(classes, labels)  +  args.a*dis_same - args.b*dis_dif # AGNEWS
        
         if self.size_average:
