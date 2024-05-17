@@ -160,8 +160,35 @@ def strs2seq(sentences:str, vocab, tokenizer, maxlen:int):
         X.append(str2seq(sentence, vocab, tokenizer, maxlen))
     return torch.stack(X)
 
-###  攻击中要用到的函数
+#####  攻击中要用到的函数  ######
 def get_random(s:int, e:int, weights=None):
     if weights is not None:
         return random.choices([i for i in range(s, e+1)], weights)[0]
     return random.randint(s, e)   
+
+def read_standard_txt_data(path):
+            # 处理的数据格式为(label,sentence) 返回data列表和label列表
+        data = []
+        labels = []
+        with open(path, 'r', encoding='utf-8') as file:
+           total_lines = sum(1 for _ in file)
+            # 重新将文件指针移回文件开头
+           file.seek(0)
+            # 使用tqdm包装文件对象
+           progress_bar = tqdm(file, total=total_lines, desc='data loading... ')
+           for line in progress_bar:
+               line = line.strip('\n')
+               data.append(line[2:].strip()) # 要求数据处理为 “label”,"data"
+               labels.append(int(line[0])) #要求数据处理为 “label”,"data"
+        logging.info(f'loading data {len(data)} from {path}')
+       
+        return data, labels
+    
+# 将抽取的数据和标签以“datas+label”的形式写入path中
+def write_standard_data(datas, labels, path, mod='w'):#data是抽样的数据 labels是抽样数据对应的标签
+    assert len(datas) == len(labels)
+    num = len(labels)
+    logging.info(f'writing standard data {num} to {path}')
+    with open(path, mod, newline='', encoding='utf-8') as file:
+        for i in range(num):
+            file.write(str(labels[i])+','+datas[i]+'\n')

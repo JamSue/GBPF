@@ -57,49 +57,49 @@ import csv
 
 ### 按照标签抽取数据
 
-import csv
-import random
+# import csv
+# import random
 
-def extract_data(csv_file, num_samples,label_num):
-    # 读取CSV文件
-    with open(csv_file, 'r', newline='', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        data_dict = {}
-        for row in reader:
-            label = row[0]
-            data = row[1]
-            if label not in data_dict:
-                data_dict[label] = []
-            data_dict[label].append(data)
+# def extract_data(csv_file, num_samples,label_num):
+#     # 读取CSV文件
+#     with open(csv_file, 'r', newline='', encoding='utf-8') as file:
+#         reader = csv.reader(file)
+#         data_dict = {}
+#         for row in reader:
+#             label = row[0]
+#             data = row[1]
+#             if label not in data_dict:
+#                 data_dict[label] = []
+#             data_dict[label].append(data)
     
-    # 计算每个标签应该抽取的样本数
-    samples_per_label = num_samples // label_num
+#     # 计算每个标签应该抽取的样本数
+#     samples_per_label = num_samples // label_num
     
-    extracted_data = []
-    for label, samples in data_dict.items():
-        # 如果某个标签下的样本数不足以达到预期数量，则全选
-        if len(samples) <= samples_per_label:
-            extracted_data.extend([(label, sample) for sample in samples])
-        else:
-            # 随机抽取指定数量的样本
-            extracted_data.extend([(label, sample) for sample in random.sample(samples, samples_per_label)])
+#     extracted_data = []
+#     for label, samples in data_dict.items():
+#         # 如果某个标签下的样本数不足以达到预期数量，则全选
+#         if len(samples) <= samples_per_label:
+#             extracted_data.extend([(label, sample) for sample in samples])
+#         else:
+#             # 随机抽取指定数量的样本
+#             extracted_data.extend([(label, sample) for sample in random.sample(samples, samples_per_label)])
     
-    return extracted_data
+#     return extracted_data
 
-def write_to_csv(data, output_file):
-    # 写入到CSV文件
-    with open(output_file, 'w', newline='', encoding='utf-8') as file:
-        # writer = csv.writer(file)
-        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
-        # writer.writerow(["Label", "Data"])  # 写入标题行
-        writer.writerows(data)
+# def write_to_csv(data, output_file):
+#     # 写入到CSV文件
+#     with open(output_file, 'w', newline='', encoding='utf-8') as file:
+#         # writer = csv.writer(file)
+#         writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+#         # writer.writerow(["Label", "Data"])  # 写入标题行
+#         writer.writerows(data)
 
-if __name__ == "__main__":
-    csv_file = "dataset/YAHOO/train_all.csv"  # 替换为你的CSV文件路径
-    output_file = "dataset/YAHOO/train.csv"  # 输出文件路径
-    # csv_file = "dataset/yelp/train_all.csv"  # 替换为你的CSV文件路径
-    # output_file = "dataset/yelp/train.csv"  # 输出文件路径
-    num_samples = 120000
+# if __name__ == "__main__":
+#     csv_file = "dataset/YAHOO/train_all.csv"  # 替换为你的CSV文件路径
+#     output_file = "dataset/YAHOO/train.csv"  # 输出文件路径
+#     # csv_file = "dataset/yelp/train_all.csv"  # 替换为你的CSV文件路径
+#     # output_file = "dataset/yelp/train.csv"  # 输出文件路径
+#     num_samples = 120000
     
-    extracted_data = extract_data(csv_file, num_samples,10)
-    write_to_csv(extracted_data, output_file)
+#     extracted_data = extract_data(csv_file, num_samples,10)
+#     write_to_csv(extracted_data, output_file)

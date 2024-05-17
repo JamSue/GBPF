@@ -6,6 +6,7 @@ import logging
 from LM import LSTM,TextCNN
 from dataProcess import MyDataset,Tokenizer,Vocab, Sentence
 from torch.utils.data import DataLoader
+import torch.nn as nn
 
 from config import args,config_data,LSTMConfig, TextCNNConfig
 from Attacker import adversarial_paraphrase,\

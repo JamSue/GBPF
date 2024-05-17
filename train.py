@@ -102,18 +102,20 @@ elif args.model =='TextCNN':
     model = TextCNN(word_dim, vocab,label_num, kernel_sizes, channels_num, dropout=0.1)
     
 model.to(args.device)
-if torch.cuda.device_count() > 1:
-    model = nn.DataParallel(model)
+
+####（改）非bert可以不要多卡并行 ####
+# if torch.cuda.device_count() > 1:
+#     model = nn.DataParallel(model)
 
 
 ### 初始化模型参数
 # 从 DataParallel 对象中获取包装的模型
-wrapped_model = model.module
-optim_configs = [{'params': wrapped_model.embedding.parameters(), 'lr':args.lr*0.1},
-                     {'params': wrapped_model.encoder.parameters(), 'lr': args.lr},
-                     {'params': wrapped_model.classifier.parameters(), 'lr': args.lr}]
+# wrapped_model = model.module
+optim_configs = [{'params': model.embedding.parameters(), 'lr':args.lr*0.1},
+                     {'params': model.encoder.parameters(), 'lr': args.lr},
+                     {'params': model.classifier.parameters(), 'lr': args.lr}]
 if model == 'TextCNN':
-        optim_configs.append({'params': wrapped_model.fc.parameters(), 'lr':args.lr*0.1}) 
+        optim_configs.append({'params': model.fc.parameters(), 'lr':args.lr*0.1}) 
 
 optimizer = Adam(optim_configs, lr=1e-4)
 # 初始化学习率调节器
@@ -221,8 +223,8 @@ for epoch in range(1,1+args.epoch):
             positiveLogits  = model(positiveFeature,label,flag=2, purity=args.purity)
             negtiveLogits  = model(negtiveFeature,label,flag=2, purity=args.purity)
             
-            # dis 表示样本与增强样本的平均距离，dis_dif表示样本与其他样本的距离
-            dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1))/args.batch_size
+            # dis 表示样本与增强样本的平均距离，dis_dif表示样本与负样本的距离
+            dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1)) #/args.batch_size
             neg_dis = torch.mean(1- F.cosine_similarity(logits, negtiveLogits , dim=1))
 
             loss =  Loss(output,center_label.long(),dis,neg_dis).to(args.cpu_device)
@@ -351,8 +353,9 @@ for epoch in range(1,1+args.epoch):
                         
                         logging.info('###### voting from %d balls ######'%(ball_num))
                         ### 多卡并行##
-                        my_classier = wrapped_model.classifier  if (torch.cuda.device_count() > 1) else model.classifier
-                        _, pred =  Vote_Neark_label(logit,my_classier,loaded_ball_centers,loaded_center_labels,args.k)
+                        # my_classier = wrapped_model.classifier  if (torch.cuda.device_count() > 1) else model.classifier
+                        
+                        _, pred =  Vote_Neark_label(logit, model.classifier,loaded_ball_centers,loaded_center_labels,args.k)
                         vote_test_correct = (pred.to(args.device) == label.to(args.device)).sum().item()
                         vote_num_correct += vote_test_correct
                         vote_test_total += label.size(0)
