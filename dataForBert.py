@@ -68,7 +68,7 @@ class MyDataset(Dataset):
     def token2seq(self, maxlen:int):
         if len(self.token_ids) > 0:
             self.token_ids.clear()
-            self.labels_tensor.clear()
+            # self.labels_tensor.clear()
         logging.info(f'is_train: {self.is_train} , data is to sequence!')
         self.maxlen = maxlen
         assert self.data_token is not None # data_tokens: [[sen1_tok1, sen1_tok2..],[...], [senn_tok1,...]]
@@ -76,8 +76,8 @@ class MyDataset(Dataset):
             padded_tokens = tokens + ['[PAD]' for _ in range(self.maxlen - len(tokens))]
             token_id = Tokenizer.convert_tokens_to_ids(padded_tokens)
             self.token_ids.append(token_id)
-        for label in self.labels:
-            self.labels_tensor.append(torch.tensor(label)) # labels_tensor： shape seq_len
+        # for label in self.labels:
+        #     self.labels_tensor.append(torch.tensor(label)) # labels_tensor： shape seq_len
     
     def split_data_by_label(self):
         datas = [[] for _ in range(self.labels_num)] # 创建labels_num个空数组，存储在datas列表中。每个列表可以存储单个标签的数据    
@@ -100,10 +100,10 @@ class MyDataset(Dataset):
         return sample_data, sample_label
     
     def __len__(self):
-            return len(self.labels_tensor)
+        
+        return len(self.labels_tensor)
 
     def __getitem__(self, item):
-        # print("self.data",len(self.data))
         return (self.data[item], self.labels_tensor[item])
         # inputs = Tokenizer(self.data[item], max_length=self.max_len, padding='max_length', truncation=True, return_tensors='pt')
         
