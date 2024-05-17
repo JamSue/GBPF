@@ -180,7 +180,7 @@ def getNegtiveSample(texts,labels):
             ##如果没有异类标签，那么添加一个填充字符串,计算距离会得到0
             negtiveSample.append("[PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]")   
     return negtiveSample       
- 
+  
 for epoch in range(1,1+args.epoch):
     model.train() # 将模型设置为训练模式
     running_loss = 0.0 # 损失
