@@ -103,3 +103,27 @@ import csv
     
 #     extracted_data = extract_data(csv_file, num_samples,10)
 #     write_to_csv(extracted_data, output_file)
+
+### 提取n条以后的数据
+
+import csv
+
+def extract_data(input_file, output_file, start_line):
+    with open(input_file, 'r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        data = list(reader)
+
+    # 提取从指定行开始的数据
+    extracted_data = data[start_line - 1:]
+
+    # 将提取的数据写入新的 CSV 文件
+    with open(output_file, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, quoting=csv.QUOTE_ALL)  # 设置引号引起所有字段
+        writer.writerows(extracted_data)
+
+if __name__ == "__main__":
+    input_file = "dataset/IMDB/train_all.csv"  # 输入文件名
+    output_file = "dataset/IMDB/train.csv"  # 输出文件名
+    start_line = 3741  # 指定开始提取的行数
+    extract_data(input_file, output_file, start_line)
+

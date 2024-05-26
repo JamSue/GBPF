@@ -297,7 +297,7 @@ for epoch in range(1,1+args.epoch):
             negtiveLogits  = model(negtiveFeature,label,flag=2, purity=args.purity)
             
              # dis 表示样本与增强样本的平均距离，dis_dif表示样本与其他样本的距离
-            dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1))/args.batch_size
+            dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1))
             neg_dis = torch.mean(1- F.cosine_similarity(logits, negtiveLogits , dim=1))
 
             loss =  Loss(output,center_label.long(),dis,neg_dis).to(args.cpu_device)
