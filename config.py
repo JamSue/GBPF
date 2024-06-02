@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import argparse
 
-config_dataset_list = ['IMDB','AGNEWS','YAHOO','YELP']
+config_dataset_list = ['IMDB','AGNEWS','YAHOO','YELP','yelp'] # yelp是2分类 YELP是5分类
 config_model_list = ['LSTM', 'TextCNN', 'BidLSTM','Bert','XLNet','RoBerta']
 parser = argparse.ArgumentParser()
 
@@ -42,7 +42,7 @@ parser.add_argument('--re_pur', default=1,help='重新聚类的纯度')
 parser.add_argument('--sample_names',default=1000, type=int, help="数据集样本抽样条数")
 parser.add_argument('--clean_samples_path',default=None,type=str,help="抽取的干净样本的路径")
 parser.add_argument('--attack_method',default="PWWS", type=str,
-                    choices=["TextFooler","PWWS", "RES","GA","NoAttack","onlyPre"], help="攻击方式")
+                     choices=["TextFooler","PWWS", "RES","GA","NoAttack","onlyPre","BertAttack"], help="攻击方式")
 parser.add_argument('--sub_rate_limit', type=float, default=0.35) #  替换的限制概率  要是替换了一定概率的词还没有攻击成功 就停止替换
 parser.add_argument('--target_model_path',default=''
                     , help="攻击的预训练目标模型的路径") 
@@ -100,6 +100,19 @@ class YELPConfig():
     remove_stop_words = False #  为什么不去除停用词
     padding_maxlen = 500 # 保留长度 
 
+class yelpPolarityConfig():
+    data_dir = r'./dataset/yelp'
+    train_data_path = r'./dataset/yelp/train.csv'
+    test_data_path = r'./dataset/yelp/test.csv'
+    train_data_npy_path = r'./dataset/yelp/train.npy'
+    test_data_npy_path = r'./dataset/yelp/test.npy'
+    attack_data_dir = r'./data_attacked/yelp'
+    augment_data_path = r'./dataset/yelp/augment.csv'
+    labels_num = 2
+    vocab_limit_size = 80000 
+    tokenizer_type = 'normal' # IMDB分词方式的选择
+    remove_stop_words = False #  为什么不去除停用词
+    padding_maxlen = 500 # 保留长度 
 class YAHOOConfig():
     data_dir = r'./dataset/YAHOO'
     train_data_path = r'./dataset/YAHOO/train.csv'
@@ -114,33 +127,33 @@ class YAHOOConfig():
     remove_stop_words = False #  为什么不去除停用词
     padding_maxlen = 300 # 保留长度 
   
-config_data ={'IMDB': IMDBConfig, 'AGNEWS':AGNEWSConfig, 'YELP':YELPConfig, 'YAHOO':YAHOOConfig}
+config_data ={'IMDB': IMDBConfig, 'AGNEWS':AGNEWSConfig, 'YELP':YELPConfig, 'YAHOO':YAHOOConfig, 'yelp':yelpPolarityConfig}
 
 class LSTMConfig():
-    num_hiddens = { 'IMDB': 128,'AGNEWS': 128, 'YAHOO': 128, 'YELP': 128}
+    num_hiddens = { 'IMDB': 128,'AGNEWS': 128, 'YAHOO': 128, 'YELP': 128, 'yelp': 128}
 
-    num_layers = {'IMDB': 2, 'AGNEWS': 2, 'YAHOO': 2, 'YELP': 2 }
+    num_layers = {'IMDB': 2, 'AGNEWS': 2, 'YAHOO': 2, 'YELP': 2 , 'yelp': 2}
 
-    is_using_pretrained = { 'IMDB': True, 'AGNEWS': True, 'YAHOO': True,'YELP': True }
+    is_using_pretrained = { 'IMDB': True, 'AGNEWS': True, 'YAHOO': True,'YELP': True , 'yelp': True}
 
-    word_dim = { 'IMDB': 300, 'AGNEWS': 300, 'YAHOO': 300, 'YELP': 300 }
+    word_dim = { 'IMDB': 300, 'AGNEWS': 300, 'YAHOO': 300, 'YELP': 300 , 'yelp': 300}
     
 class TextCNNConfig():
     channel_kernel_size = {
         'IMDB': ([50, 50, 50], [3, 4, 5]), 'AGNEWS': ([50, 50, 50], [3, 4, 5]),
-        'YAHOO': ([50, 50, 50], [3, 4, 5]), 'YELP': ([50, 50, 50], [3, 4, 5]) }
+        'YAHOO': ([50, 50, 50], [3, 4, 5]), 'YELP': ([50, 50, 50], [3, 4, 5]), 'yelp': ([50, 50, 50], [3, 4, 5]) }
     
-    is_static = { 'IMDB': True, 'AGNEWS': True, 'YAHOO': True, 'YELP': True }
+    is_static = { 'IMDB': True, 'AGNEWS': True, 'YAHOO': True, 'YELP': True , 'yelp': True}
     
-    using_pretrained = {'IMDB': True, 'AGNEWS': True, 'YAHOO': True,'YELP': True }
+    using_pretrained = {'IMDB': True, 'AGNEWS': True, 'YAHOO': True,'YELP': True, 'yelp': True }
 
-    word_dim = { 'IMDB': 300, 'AGNEWS': 300, 'YAHOO': 300, 'YELP': 300 }
+    word_dim = { 'IMDB': 300, 'AGNEWS': 300, 'YAHOO': 300, 'YELP': 300, 'yelp': 300 }
     
 ### 暂时三个模型公用这一个参数
 class BertConfig():
-    num_hiddens = {'IMDB':  768,  'AGNEWS':768, 'YAHOO': 768, 'YELP':  768, 'SST2':  768,   }
+    num_hiddens = {'IMDB':  768,  'AGNEWS':768, 'YAHOO': 768, 'YELP':  768, 'yelp':  768,   }
 
-    word_dim = {'IMDB': 100, 'AGNEWS': 100, 'YAHOO': 100, 'YELP': 100, 'SST2':100 }
+    word_dim = {'IMDB': 100, 'AGNEWS': 100, 'YAHOO': 100, 'YELP': 100, 'yelp':100 }
     
 class ballConfig:
         if not os.path.exists('gb_data'):
