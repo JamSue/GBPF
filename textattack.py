@@ -17,7 +17,7 @@ import random
 import torch
 from config import args,BertConfig,config_data
 from LM import myModel
-from dataProcess import Sentence
+from dataForBert import Sentence
 
 """
 命令：python -textattack.py --pretrained_model_path --model --dataset --attack_method
@@ -64,7 +64,7 @@ dataset = textattack.datasets.Dataset(load_dataset_from_csv(file_path,sample_num
 # 创建一个文本分类任务的模型包装器
 class myModelWrapper(ModelWrapper):
     def __init__(self):
-        # 初始化您的模型
+        # 初始化模型
         hidden_size = BertConfig.num_hiddens[args.dataset]
         word_dim = BertConfig.word_dim[args.dataset]
         label_num = config_data[args.dataset].labels_num 
