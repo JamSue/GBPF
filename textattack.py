@@ -75,7 +75,23 @@ class myModelWrapper(ModelWrapper):
         else:
                 Model_weight = torch.load(args.pretrained_model_path,'cpu') # 显卡不可用则加载到cpu上
 
-        self.model.load_state_dict(Model_weight['model_state_dict'])
+    ### 多卡训练的模型需开启这段代码
+        # state_dict = Model_weight['model_state_dict']
+
+        # # 检查key是否有module前缀
+        # has_module_prefix = any(key.startswith('module.') for key in state_dict.keys())
+
+        # if has_module_prefix:
+        #     # 移除'module'前缀
+        #     new_state_dict = {k[7:]: v for k, v in state_dict.items() if k.startswith('module.')}
+        # else:
+        #     new_state_dict = state_dict
+
+        # # print("####", new_state_dict)
+
+        # # 加载处理后的权重
+        # self.model.load_state_dict(new_state_dict, strict=False)
+        # # self.model.load_state_dict(Model_weight['model_state_dict'])
         self.model.to(args.device)
         self.model.eval()
 
@@ -88,7 +104,13 @@ class myModelWrapper(ModelWrapper):
             processor = Sentence(args.dataset)
             output = processor.process(sen)
             with torch.no_grad():
-                outputs = self.model(output,target_label=None,flag=1,purity=1)
+                if args.model == 'RoBERTa':
+                    outputs = self.model(output["input_ids"],output["attention_mask"],
+                                        torch.empty([1,300]),target_label=None,flag=1,purity=1)
+                else:    
+                    outputs = self.model(output["input_ids"],output["attention_mask"],
+                                        output["token_type_ids"],target_label=None,flag=1,purity=1)
+                
                 if logit==None:
                     logit = outputs
                 else:

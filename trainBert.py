@@ -33,7 +33,7 @@ seed_torch()
 
 if args.device== torch.device('cuda'):
     os.environ['CUBLAS_WORKSPACE_CONFIG']=':4096:8' 
-    
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128' # 控制内存分配策略，避免内存碎片化
 
 if args.model=='Bert':
     BERT_PATH = './bert'
@@ -148,7 +148,6 @@ def getPostiveSample(texts,labels):
             positiveSample.append(augmentReader.getAugmentSample(text)) # 如果同类标签只有原样本自身，那么选取增强样本    
         else:
             # 获取同标签的所有样本 ,在同标签的所有样本中随机选一个不是自身的样本
-
             selectedSample = random.choice([sample for sample in label_dict[label]  if sample != text])
             # 以50%的概率选取增强样本或者同标签样本
             if random.random() < 0.5:
@@ -193,10 +192,10 @@ for epoch in range(1,1+args.epoch):
     eval_num = 0 # 评估次数
     logging.info("Epoch {}/{}".format(epoch,args.epoch))
     
-    if epoch ==5: 
+    if epoch ==3: 
         best_accuracy = 0.0 # 重新更新best_accuracy
     
-    if epoch < 5:
+    if epoch < 3:
         #正常训练
         step = 0
         for batch_index,(texts,label) in enumerate(train_iterator):
@@ -212,29 +211,12 @@ for epoch in range(1,1+args.epoch):
             augmentFeature = Tokenizer(augmentSample, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
             
             label = label.to(args.device)
-              
-            features["input_ids"] = (features["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
-            features["attention_mask"] =(features["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
-            if args.model=='Bert'or args.model=='XLNet':
-                features["token_type_ids"] = (features["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
-             
-               
-            positiveFeature["input_ids"] = (positiveFeature["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
-            positiveFeature["attention_mask"] =(positiveFeature["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
-            if args.model=='Bert'or args.model=='XLNet':
-                positiveFeature["token_type_ids"] = (positiveFeature["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
-             
-               
-            negtiveFeature["input_ids"] = (negtiveFeature["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
-            negtiveFeature["attention_mask"] =(negtiveFeature["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
-            if args.model=='Bert'or args.model=='XLNet':
-                negtiveFeature["token_type_ids"] = (negtiveFeature["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
             
-            augmentFeature["input_ids"] = (augmentFeature["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
-            augmentFeature["attention_mask"] =(augmentFeature["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
-            if args.model=='Bert'or args.model=='XLNet':
-                augmentFeature["token_type_ids"] = (augmentFeature["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
-             
+            for feature in [features, positiveFeature, negtiveFeature, augmentFeature]:
+                feature["input_ids"] = (feature["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
+                feature["attention_mask"] =(feature["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
+                if args.model=='Bert'or args.model=='XLNet':
+                    feature["token_type_ids"] = (feature["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
              # 前向传播, 调用模型的forward函数 返回 原始数据、球心过分类器的结果、原始标签、聚类后的球心向量和球心标签
             data, output,target_label,ball_center,center_label = model(features, label, flag=0, purity=args.purity)
             
@@ -265,7 +247,6 @@ for epoch in range(1,1+args.epoch):
             
             dis_aug_pos = torch.zeros(data.shape[0], device=args.device)
             dis_aug_neg = torch.zeros(data.shape[0], device=args.device)
-            
             for i in range(data.shape[0]):  
                 # 计算与目标标签中心的距离
                 dis_center_pos[i] = 1 - F.cosine_similarity(data[i:i+1, :], arr_center[target_label[i]],dim=-1)
@@ -338,19 +319,21 @@ for epoch in range(1,1+args.epoch):
                 logging.info('Current best acc:{:.2f}% at epoch{} --eval_num{}'.format(best_accuracy, best_acc_loc,best_eval_num_loc))
                 logging.info('Current Learning Rate: {}'.format(lr_scheduler.get_last_lr()))
                 
-    if epoch >= 5:
-        #从第5轮开始数据增强
+    if epoch >= 3:
+        #从第3轮开始数据增强
         step = 0
         for batch_index,(texts,label) in enumerate(train_iterator):
             current_step += 1
             step+=1
             positiveSample = getPostiveSample(texts,label)
             negtiveSample = getNegtiveSample(texts,label)
-            
+            augmentSample = getAugmentTexts(texts)
+
             features = Tokenizer(texts, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
             positiveFeature = Tokenizer(positiveSample, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
             negtiveFeature = Tokenizer(negtiveSample, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
-          
+            augmentFeature = Tokenizer(augmentSample, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
+
             label = label.to(args.device)
               
             features["input_ids"] = (features["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
@@ -369,7 +352,12 @@ for epoch in range(1,1+args.epoch):
             negtiveFeature["attention_mask"] =(negtiveFeature["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
             if args.model=='Bert'or args.model=='XLNet':
                 negtiveFeature["token_type_ids"] = (negtiveFeature["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
-             
+            
+            augmentFeature["input_ids"] = (augmentFeature["input_ids"].view(args.batch_size, maxlen)).to(args.device)  # (batch_size,seq_len)        
+            augmentFeature["attention_mask"] =(augmentFeature["attention_mask"].view(args.batch_size, maxlen)).to(args.device)
+            if args.model=='Bert'or args.model=='XLNet':
+                augmentFeature["token_type_ids"] = (augmentFeature["token_type_ids"].view(args.batch_size, maxlen)).to(args.device)
+
              # 前向传播, 调用模型的forward函数 返回 原始数据、球心过分类器的结果、原始标签、聚类后的球心向量和球心标签
             data, output,target_label,ball_center,center_label = model(features, label, flag=0, purity=args.purity)
             
@@ -377,10 +365,46 @@ for epoch in range(1,1+args.epoch):
             logits = model(features,label,flag=2, purity=args.purity)
             positiveLogits  = model(positiveFeature,label,flag=2, purity=args.purity)
             negtiveLogits  = model(negtiveFeature,label,flag=2, purity=args.purity)
+            augmentLogits  = model(augmentFeature,label,flag=2, purity=args.purity)
             
             # dis 表示样本与增强样本的平均距离，dis_dif表示样本与其他样本的距离
             dis = torch.mean(1 - F.cosine_similarity(logits, positiveLogits , dim=1))/args.batch_size
             neg_dis = torch.mean(1- F.cosine_similarity(logits, negtiveLogits , dim=1))
+            
+            # 将本batch的数据数据按标签划分为label_num组并求中心
+            arr_center = [torch.zeros(ball_center.shape[1], device=args.device) for _ in range(label_num)]
+            num = torch.zeros(label_num, device=args.device)  # 初始化每个标签的数据数量
+
+            for idx in range(data.shape[0]):
+                label = target_label[idx].to(torch.int) # 将原始数据的对应标签转化成int
+                arr_center[label] += data[idx]
+                num[label] += 1
+
+            for i in range(label_num):
+                arr_center[i] /= num[i] 
+            
+            dis_center_pos = torch.zeros(data.shape[0], device=args.device)
+            dis_center_neg = torch.zeros(data.shape[0], device=args.device)
+            
+            dis_aug_pos = torch.zeros(data.shape[0], device=args.device)
+            dis_aug_neg = torch.zeros(data.shape[0], device=args.device)
+            
+            for i in range(data.shape[0]):  
+                # 计算与目标标签中心的距离
+                dis_center_pos[i] = 1 - F.cosine_similarity(data[i:i+1, :], arr_center[target_label[i]],dim=-1)
+                dis_aug_pos[i] = 1 - F.cosine_similarity(augmentLogits[i:i+1, :], arr_center[target_label[i]],dim=-1)
+                # 单数据与其他标签中心的距离 shape: [label]
+                dis_center_neg[i] = 1 - torch.mean(F.cosine_similarity(data[i:i+1, :], 
+                                    torch.stack([arr_center[j] for j in range(label_num) if j != target_label[i]]),dim=-1))
+
+                dis_aug_neg[i] = 1 - torch.mean(F.cosine_similarity(augmentLogits[i:i+1, :], 
+                                    torch.stack([arr_center[j] for j in range(label_num) if j != target_label[i]]),dim=-1))
+                
+            dis_center_pos = torch.mean(dis_center_pos, dim=0)
+            dis_center_neg = torch.mean(dis_center_neg, dim=0)
+
+            dis_aug_pos = torch.mean(dis_aug_pos, dim=0)
+            dis_aug_neg = torch.mean(dis_aug_neg, dim=0)
 
             cross_entropy_loss = nn.CrossEntropyLoss()
             entropyLoss = cross_entropy_loss(output,center_label.long())

@@ -9,7 +9,7 @@ import numpy as np
 import argparse
 
 config_dataset_list = ['IMDB','AGNEWS','YAHOO','YELP','yelp'] # yelp是2分类 YELP是5分类
-config_model_list = ['LSTM', 'TextCNN', 'BidLSTM','Bert','XLNet','RoBerta']
+config_model_list = ['LSTM', 'TextCNN', 'BidLSTM','Bert','XLNet','RoBERTa']
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--cpu_device', default= torch.device("cpu"), help="sometimes need to put datas to the cpu")
@@ -52,6 +52,7 @@ parser.add_argument('--pretrained_model_path',default="./models/(bs128)model_LST
 parser.add_argument('--k', default=4, type=int,help="k值，训练与应用中都需要用到")
 parser.add_argument('--count_t', default=3, type=int,help="训练时每个batch保留的球数")
 parser.add_argument('--ball_threshold', default=3000, type=int,help="粒球队列中保存数量的阈值")
+parser.add_argument('--ball_path', default='',  help="粒球保存路径")
 
 args = parser.parse_args()
 
@@ -112,7 +113,7 @@ class yelpPolarityConfig():
     vocab_limit_size = 80000 
     tokenizer_type = 'normal' # IMDB分词方式的选择
     remove_stop_words = False #  为什么不去除停用词
-    padding_maxlen = 500 # 保留长度 
+    padding_maxlen = 300 # 保留长度 
 class YAHOOConfig():
     data_dir = r'./dataset/YAHOO'
     train_data_path = r'./dataset/YAHOO/train.csv'
@@ -158,7 +159,8 @@ class BertConfig():
 class ballConfig:
         if not os.path.exists('gb_data'):
             os.makedirs('gb_data')
-        ball_path = './gb_data/{}_{}_ballData.npy'.format(args.dataset,args.model) # 聚球后数据的npy文件路径
+        # ball_path = './gb_data/{}_{}_ballData.npy'.format(args.dataset,args.model) # 聚球后数据的npy文件路径
+        ball_path = args.ball_path if args.ball_path != '' else './gb_data/{}_{}_ballData.npy'.format(args.dataset, args.model)
         if(os.path.exists(ball_path)):
             loaded_data = np.load(ball_path)
             loaded_ball_centers =  torch.from_numpy(loaded_data[:, :-1]).float()

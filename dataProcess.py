@@ -408,17 +408,37 @@ class augmentDataReader:
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
             ##################将增强样本set识别成一个字符串了########
-            for row in reader:
-                key = row[0]  # 假设第一列是键
-                value = set(ast.literal_eval(row[1])) # 需要将字符串转成set
-                self.augmentDict[key] = value
-            
+            try:
+                for row in reader:
+                    key = row[0]  # 假设第一列是键
+                    value = set(ast.literal_eval(row[1])) # 需要将字符串转成set
+                    self.augmentDict[key] = value
+            except (ValueError, SyntaxError) as e:
+                        print(f'解析错误: {e}')
+                        print('row:', key)
+                        print('value', value)
+                        print('row[1]', row[1])
+            except KeyError as e:
+                print(f'KeyError: {e}')
+                print('row:', key)
+                print('value', value)
+                print('row[1]', row[1])
+            except Exception as e:
+                print(f'其他错误: {e}')
+                print('row:', key)
+                print('value', value)
+                print('row[1]', row[1])
     def getAugmentSample(self, statement):
         """根据传入的样本从增强样本csv文件中获取对应的增强样本列表"""
         augmentSample = []
-        
-        if isinstance(statement, str):
-            return random.choice(list(self.augmentDict[statement]))
+        try:
+            if isinstance(statement, str):
+                return random.choice(list(self.augmentDict[statement]))
+        except:
+            print('*******報錯*****')
+            print(statement)
+            print(len(list(self.augmentDict[statement])))
+            print('**************')
     
             for sen in statement:   
                 if sen in self.augmentKeys:

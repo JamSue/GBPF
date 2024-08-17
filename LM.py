@@ -102,7 +102,7 @@ class LSTM(nn.Module):
     
         x = torch.where(torch.from_numpy(mask).to(args.device), torch.tensor(0).to(args.device), x.to(args.device)) 
         # x = np.where(mask, 0, x)# x = np.where(mask, 0, x.detach().cpu())
-        # x = torch.tensor(x).to(args.device)
+        # x = torch.tensor(x).to(device)
       
         embed = self.embedding(x) # 将每个词token_id变成向量 embed.size: (bs,seq_len,word_dim)
         # print(embed.shape)
@@ -376,7 +376,7 @@ class myModel(nn.Module):
         #     return logits   
         return torch.tensor(prob)
         
-    def forward(self, x, target_label, flag, purity):
+    def forward(self, x,attention_mask,token_type_ids, target_label, flag, purity):
         """        adv_y = model.predict_prob(perturbed_vector, true_y)
 
         x:(bs,seq_len)
@@ -385,20 +385,19 @@ class myModel(nn.Module):
         purity:聚球纯度
         """  
         
-        # print(x) （LLP:24-3-17这边需要确认roberta,xlnet三个模型的数据是否一致，好像不一致。。。）
         if args.model=='RoBERTa':
             # print(x['input_ids'].shape) # batch_size,padding_len
-            pooler_output = self.myModel(x["input_ids"].to(args.device), attention_mask = x["attention_mask"].to(args.device))
+            pooler_output = self.myModel(x.to(args.device), attention_mask = attention_mask.to(args.device))
             # pooler_output是一个长度为2的元组，第一个元素的大小为(bs,padding_len,50265)表示对每个位置都输出一个词库中的概率
             # 第二个元素为每个隐藏层的状态
             out = pooler_output[1][len(pooler_output[1])-1]
             # print(out.shape) # bs,seq_len,hidden_size）
         else:
-            pooler_output = self.myModel(x["input_ids"].to(args.device), attention_mask = x["attention_mask"].to(args.device),
-                            token_type_ids = x['token_type_ids'].to(args.device)) # 将每个词token_id变成向量 embed.size: (bs,seq_len,768)
-    
+            pooler_output = self.myModel(x.to(args.device), attention_mask = attention_mask.to(args.device),
+                            token_type_ids = token_type_ids.to(args.device)) # 将每个词token_id变成向量 embed.size: (bs,seq_len,768)
+
             out = pooler_output.last_hidden_state ## （bs,seq_len,hidden_size）
-        
+        #print("out before mean",out.shape)
          ### 1.平均池化
         out = out.mean(dim=1).contiguous() #求out维度1（seq_len）上的均值，并去掉求均值的维度[batch_size,hidden_dim]
         out = out.view(out.size(0), -1) # -1表示自动确定维度 ->[batch_size,128] (batch_size,hidden_size)
@@ -407,20 +406,22 @@ class myModel(nn.Module):
         # attention_weights = F.softmax(out, dim=1) # 计算注意力权重
         # out = torch.sum(attention_weights * out, dim=1) # 使用注意力权重计算加权平均 (batch_size, hidden_size)
        
-        out = out.view(out.size(0), -1) # (batch_size,hidden_size)
+        #out = out.view(out.size(0), -1) # (batch_size,hidden_size)
 
         out= (self.encoder(out)).to(args.device) # out: (bs,hidden_size)
-        
+
         # out = self.dropout(out)
         #### (1)训练阶段： 过粒球层 粒球聚类也需要被优化
         if flag == 0:
             # 调整输入数据形状
-            data = out
-            origin_label = target_label
-            
+            data = out.clone()
+            origin_label = target_label.clone()
+           # print("out",out.shape)
+           # print("target",target_label.shape)
             # 将标签与输出拼接
             # print("origin_lable:",origin_label.shape)
             # print("data:", data.shape)
+
             out = torch.cat((target_label.reshape(-1, 1), out), dim=1)
             
             # 为每个样本复制一个纯度
