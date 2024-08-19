@@ -36,7 +36,7 @@ For Bert Series:
 
 during training we will obtain models saved in './checkpoints', and Granular_Ball Space will save at './gb_data'
 
-## 3. defend process
+## Defend Process
 
 For classical models:
 `python attack.py --model LSTM --dataset AGNEWS --attack_method PWWS  --pretrained_model_path (target model pth file path) --k 20`
