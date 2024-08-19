@@ -20,8 +20,7 @@ To ensure reproducibility of the experiments, use the following Conda environmen
     "2","EU warns Italy on Alitalia stake The Italian state must give up its majority stake in troubled Alitalia when the airline sells new shares, the EU warns."
 
     download the dataset from following url:
-                link：https://pan.baidu.com/s/125g0Uy7TE7gWzwGt8o0cMg 
-                code：zftn
+                https://www.dropbox.com/scl/fo/1llj28nheeeogsobachwh/AJ7SeBBIG8qvZMMJaKGQMoE?rlkey=gvf1b6co43ssvbm17tl96u1j3&st=53iacvh5&dl=0
 ## Model Download
     for classical model, you don't need to download models, just import a package by `from torch import nn`;
 
