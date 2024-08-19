@@ -11,7 +11,7 @@ To ensure reproducibility of the experiments, use the following Conda environmen
    conda activate myenv
    ```
 
-## 1. dataset processing
+## Dataset processing
 
     Our datasets are all in directory './dataset', saved as csv files
     format as "label", "sentence"
@@ -19,7 +19,14 @@ To ensure reproducibility of the experiments, use the following Conda environmen
     example from AGNEWS:
     "2","EU warns Italy on Alitalia stake The Italian state must give up its majority stake in troubled Alitalia when the airline sells new shares, the EU warns."
 
-## 2. training command
+    download the dataset from following url:
+                link：https://pan.baidu.com/s/125g0Uy7TE7gWzwGt8o0cMg 
+                code：zftn
+## Model Download
+    for classical model, you don't need to download models, just import a package by `from torch import nn`;
+
+    for Bert Serise, down Bert, XLNet and RoBERTa from huggingFace or by script.
+## Training Command
 
 For classical models:
 `python train.py --model LSTM --dataset AGNEWS --batch_size 128 --augment_num 5`
