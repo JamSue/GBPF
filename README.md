@@ -44,6 +44,8 @@ For classical models:
 `python attack.py --model LSTM --dataset AGNEWS --attack_method PWWS  --pretrained_model_path (target model pth file path) --ball_path (your GBS saved path，such as: `gb_data/AGNEWS_LSTM_ballData_.npy`) --k 20`
 For Bert Series:
 `python textattack.py --model Bert --dataset AGNEWS --attack_method PWWS --pretrained_model_path (target model pth file path) --ball_path (your GBS saved path，such as: `gb_data/AGNEWS_Bert_ballData_.npy`) --k 20 `
+    for example:
+    `python textattack.py --model Bert --dataset AGNEWS --attack_method PWWS --pretrained_model_path model\model_Bert_AGNEWS_best_93.75.pth --ball_path gb_data\AGNEWS_Bert_ballData_droupout0.3.npy --k 20 `
 
 # parameters
 

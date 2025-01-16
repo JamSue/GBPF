@@ -1,12 +1,12 @@
 # 忽略对数据集，日志文件，粒球文件，模型的版本控制
 
-dataset
+# dataset
 *.log
-model
+# model
 bert
 roberta
 xlnet
-gb_data
+# gb_data
 checkpoints
 __pycache__
 nohup.out
