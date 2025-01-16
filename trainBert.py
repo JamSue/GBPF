@@ -292,7 +292,7 @@ for epoch in range(1,1+args.epoch):
                         label = label.to(args.device) # size: ([64])
                         # features = features.to(args.device) # texts(bs*2)
                         features = Tokenizer(texts, max_length=maxlen, padding='max_length', truncation=True, return_tensors='pt')
-                        output = model(features, label, flag=-1, purity=1)        
+                        _,output = model(features, label, flag=-1, purity=1)        
 
                         _, pred = torch.max(output.data, 1)
                         test_correct = (pred == label).sum().item()
@@ -447,7 +447,7 @@ for epoch in range(1,1+args.epoch):
                         features["attention_mask"] =features["attention_mask"].view(bs, maxlen)
                         if args.model=='Bert'or args.model=='XLNet':
                             features["token_type_ids"] = features["token_type_ids"].view(bs, maxlen)  
-                        output = model(features, label, flag=-1, purity=1)   
+                        _,output = model(features, label, flag=-1, purity=1)   
 
                         _, pred1 = torch.max(output.data, 1)
                         test_correct = (pred1 == label).sum().item()

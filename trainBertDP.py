@@ -65,7 +65,7 @@ root_logger = logging.getLogger()
 for h in root_logger.handlers:
     root_logger.removeHandler(h)
 
-log_file = f'./logs/trainingBertDP_{args.model}_{args.dataset}_info.log'  # 日志文件名称
+log_file = f'./logs/trainingBertDP_{args.model}_{args.dataset}_dropout{args.dropout}_info.log'  # 日志文件名称
 with open(log_file, 'a', encoding="utf-8") as file:
     pass  # 空操作
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -94,7 +94,7 @@ logging.info('{} model initializing...'.format(args.model))
 
 hidden_size = BertConfig.num_hiddens[args.dataset]
 word_dim = BertConfig.word_dim[args.dataset]
-model = myModel(hidden_size, word_dim, label_num, dropout=0.1)
+model = myModel(hidden_size, word_dim, label_num, dropout=args.dropout)
 
 model.to(device)
 model = nn.DataParallel(model,[0,1])
@@ -121,7 +121,7 @@ Loss = TripleLoss(label_num)
 ### 初始化指标和训练中的参数
 best_accuracy = 0.0
 current_step = 0
-ballData_path = './gb_data/{}_{}_ballData.npy'.format(args.dataset, args.model)
+ballData_path = './gb_data/{}_{}_{}_ballData.npy'.format(args.dataset, args.model,args.dropout)
 best_model_path = "./models/best_model.pth"
 
 logging.info("start training!!!")
@@ -355,8 +355,7 @@ for epoch in range(1, 1 + args.epoch):
                                              return_tensors='pt')
                         if args.model=='RoBERTa':
                             features["token_type_ids"] = None
-                        output = model(features['input_ids'],features['attention_mask'],features["token_type_ids"], label, flag=-1, purity=1)
-
+                        _, output = model(features['input_ids'],features['attention_mask'],features["token_type_ids"], label, flag=-1, purity=1)
                         _, pred = torch.max(output.data, 1)
                         test_correct = (pred == label).sum().item()
                         num_correct += test_correct
@@ -564,8 +563,7 @@ for epoch in range(1, 1 + args.epoch):
                             features["token_type_ids"] = None
                         if args.model == 'Bert' or args.model == 'XLNet':
                             features["token_type_ids"] = features["token_type_ids"].view(bs, maxlen)
-                        output = model(  features["input_ids"],features["attention_mask"], features["token_type_ids"], label, flag=-1, purity=1)
-
+                        _, output = model(  features["input_ids"],features["attention_mask"], features["token_type_ids"], label, flag=-1, purity=1)
                         _, pred1 = torch.max(output.data, 1)
                         test_correct = (pred1 == label).sum().item()
                         num_correct += test_correct
@@ -578,7 +576,7 @@ for epoch in range(1, 1 + args.epoch):
                         loaded_center_labels = balls[:, -1].float()
                         ball_num = loaded_ball_centers.size(0)  # 粒球数量
 
-                        logging.info('###### voting from %d balls ######' % (ball_num))
+                        # logging.info('###### voting from %d balls ######' % (ball_num))
 
                         _, pred = Vote_Neark_label(logit, wrapped_model.classifier, loaded_ball_centers, loaded_center_labels,
                                                    args.k)
@@ -609,7 +607,7 @@ for epoch in range(1, 1 + args.epoch):
                         center_labels_np = loaded_center_labels.cpu().numpy()  # 转换center_labels为NumPy数组
                         ball_data = np.column_stack(
                             (ball_centers_np, center_labels_np))  # 将ball_centers_np和center_labels_np合并为一个二维数组
-                        file_path = './gb_data/{}_{}_ballData.npy'.format(args.dataset, args.model)  # 保存的npy文件路径
+                        file_path = './gb_data/{}_{}_{}_ballData.npy'.format(args.dataset, args.model,args.dropout) # 保存的npy文件路径
                         np.save(file_path, ball_data)  # 保存数据为npy文件
 
                         logging.info('save balls at {%d}th-epoch %dth-eval, best_acc_save:%.5f'

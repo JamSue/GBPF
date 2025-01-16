@@ -450,8 +450,9 @@ class myModel(nn.Module):
        
         #### (3)在训练不过粒球模型，直接用LSTM+classifier进行预测  
         if flag == -1:
+            data = out
             out = self.classifier(out)
-            return out
+            return data, out
         
         #### (4)直接使用LSTM出来的logit不经过分类器与粒球 
         if flag == 2:

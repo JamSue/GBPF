@@ -32,6 +32,7 @@ parser.add_argument('--b', default=0.1, type=float, help='Hyperparameters in the
 
 parser.add_argument('--maskRate', default=0.25, type=float, help='mask ratio during training')# 训练时的掩码比例
 parser.add_argument('--augment_num', default=20, type=int, help='augment num of train data')# 训练时的掩码比例
+parser.add_argument('--dropout', default=0.1, type=float, help='')
 
 # 粒球聚类的参数
 parser.add_argument('--recluster',default=3,type=int,help='聚球次数')
@@ -53,6 +54,7 @@ parser.add_argument('--k', default=4, type=int,help="k值，训练与应用中�
 parser.add_argument('--count_t', default=3, type=int,help="训练时每个batch保留的球数")
 parser.add_argument('--ball_threshold', default=3000, type=int,help="粒球队列中保存数量的阈值")
 parser.add_argument('--ball_path', default='',  help="粒球保存路径")
+parser.add_argument('--is_DP', default='false',  help="针对textattack攻击，多卡训练与单卡训练配置不同")
 
 args = parser.parse_args()
 

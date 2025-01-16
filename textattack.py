@@ -18,10 +18,27 @@ import torch
 from config import args,BertConfig,config_data
 from LM import myModel
 from dataForBert import Sentence
+import numpy as np
+"""
+命令：python textattack.py --pretrained_model_path --model --dataset --attack_method --is_DP
+"""
 
-"""
-命令：python -textattack.py --pretrained_model_path --model --dataset --attack_method
-"""
+# 设置随机种子，以确保实验的可复现性
+def seed_torch(seed=42):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed) # 为了禁止hash随机化，使得实验可复现
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed) # if you are using multi-GPU.
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    # torch.use_deterministic_algorithms(True)  # 有检查操作，看下文区别 
+seed_torch()
+
+if args.device== torch.device('cuda'):
+    os.environ['CUBLAS_WORKSPACE_CONFIG']=':4096:8' 
+    
 # （1）创建log文件夹
 if not os.path.exists('logs'):
     os.makedirs('logs')
@@ -76,22 +93,23 @@ class myModelWrapper(ModelWrapper):
                 Model_weight = torch.load(args.pretrained_model_path,'cpu') # 显卡不可用则加载到cpu上
 
     ### 多卡训练的模型需开启这段代码
-        # state_dict = Model_weight['model_state_dict']
+        if args.is_DP:
+            state_dict = Model_weight['model_state_dict']
 
-        # # 检查key是否有module前缀
-        # has_module_prefix = any(key.startswith('module.') for key in state_dict.keys())
+            # 检查key是否有module前缀
+            has_module_prefix = any(key.startswith('module.') for key in state_dict.keys())
 
-        # if has_module_prefix:
-        #     # 移除'module'前缀
-        #     new_state_dict = {k[7:]: v for k, v in state_dict.items() if k.startswith('module.')}
-        # else:
-        #     new_state_dict = state_dict
+            if has_module_prefix:
+                # 移除'module'前缀
+                new_state_dict = {k[7:]: v for k, v in state_dict.items() if k.startswith('module.')}
+            else:
+                new_state_dict = state_dict
 
-        # # print("####", new_state_dict)
+            # print("####", new_state_dict)
 
-        # # 加载处理后的权重
-        # self.model.load_state_dict(new_state_dict, strict=False)
-        # # self.model.load_state_dict(Model_weight['model_state_dict'])
+            # 加载处理后的权重
+            self.model.load_state_dict(new_state_dict, strict=False)
+        # self.model.load_state_dict(Model_weight['model_state_dict'])
         self.model.to(args.device)
         self.model.eval()
 

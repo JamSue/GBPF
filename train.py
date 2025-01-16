@@ -44,7 +44,7 @@ root_logger = logging.getLogger()
 for h in root_logger.handlers:
     root_logger.removeHandler(h)
 
-log_file = f'./logs/training_{args.model}_{args.dataset}_info.log' # 日志文件名称
+log_file = f'./logs/training_{args.model}_{args.dataset}_{args.dropout}_info.log' # 日志文件名称
 with open(log_file, 'a', encoding="utf-8") as file:
     pass  # 空操作
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -86,18 +86,18 @@ if args.model =='LSTM':
     num_layers = LSTMConfig.num_layers[args.dataset] # 2
     word_dim = LSTMConfig.word_dim[args.dataset] # 128
     is_using_pretrained = LSTMConfig.is_using_pretrained[args.dataset]
-    model = LSTM(word_dim, hidden_size=num_hiddens, num_layers=num_layers, vocab=vocab, labels_num=label_num, dropout=0.1, bid=False)
+    model = LSTM(word_dim, hidden_size=num_hiddens, num_layers=num_layers, vocab=vocab, labels_num=label_num, dropout=args.dropout, bid=False)
 elif args.model == 'BidLSTM':
     num_hiddens = LSTMConfig.num_hiddens[args.dataset]
     num_layers = LSTMConfig.num_layers[args.dataset]
     word_dim = LSTMConfig.word_dim[args.dataset]
     is_using_pretrained = LSTMConfig.is_using_pretrained[args.dataset]
-    model = LSTM(word_dim, hidden_size=num_hiddens, num_layers=num_layers, vocab=vocab, labels_num=label_num, dropout=0.1, bid=True)
+    model = LSTM(word_dim, hidden_size=num_hiddens, num_layers=num_layers, vocab=vocab, labels_num=label_num, dropout=args.dropout, bid=True)
 elif args.model =='TextCNN':
     word_dim = TextCNNConfig.word_dim[args.dataset]
     kernel_sizes =TextCNNConfig.channel_kernel_size[args.dataset][1]
     channels_num = TextCNNConfig.channel_kernel_size[args.dataset][0]
-    model = TextCNN(word_dim, vocab,label_num, kernel_sizes, channels_num, dropout=0.1)
+    model = TextCNN(word_dim, vocab,label_num, kernel_sizes, channels_num, dropout=args.dropout)
     
 model.to(args.device)
 
@@ -118,6 +118,7 @@ Loss = TripleLoss(label_num)
 best_accuracy = 0.0
 current_step = 0
 ballData_path = './gb_data/{}_{}_ballData.npy'.format(args.dataset,args.model)
+
 
 logging.info("start training!!!")
 
@@ -269,7 +270,7 @@ for epoch in range(1,1+args.epoch):
         
         loss = loss1 + entropyLoss
 
-        optimizer.zero_grad()  # 梯度清零
+        optimizer.zero_grad()  # 梯度清零,清除储存的上一轮计算的梯度
         loss.backward() # 反向传播 通过模型的反向传播函数进行传播的
         optimizer.step() # 更新模型参数
             
@@ -381,7 +382,7 @@ for epoch in range(1,1+args.epoch):
                         ball_centers_np = loaded_ball_centers.cpu().numpy()  # 转换ball_centers为NumPy数组
                         center_labels_np =  loaded_center_labels.cpu().numpy()  # 转换center_labels为NumPy数组
                         ball_data = np.column_stack((ball_centers_np, center_labels_np))  # 将ball_centers_np和center_labels_np合并为一个二维数组
-                        file_path = './gb_data/{}_{}_ballData.npy'.format(args.dataset,args.model) # 保存的npy文件路径 
+                        file_path = './gb_data/{}_{}_{}_ballData.npy'.format(args.dataset,args.model,args.dropout) # 保存的npy文件路径 
                         np.save(file_path,ball_data)  # 保存数据为npy文件
                         
                         logging.info('save balls at {%d}th-epoch %dth-eval, best_acc_save:%.5f'

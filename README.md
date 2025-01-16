@@ -11,6 +11,8 @@ To ensure reproducibility of the experiments, use the following Conda environmen
    conda activate myenv
    ```
 
+   torch may be installed by:  pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 torchaudio==0.13.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+
 ## Dataset processing
 
     Our datasets are all in directory './dataset', saved as csv files
@@ -39,10 +41,20 @@ during training we will obtain models saved in './checkpoints', and Granular_Bal
 ## Defend Process
 
 For classical models:
-`python attack.py --model LSTM --dataset AGNEWS --attack_method PWWS  --pretrained_model_path (target model pth file path) --k 20`
+`python attack.py --model LSTM --dataset AGNEWS --attack_method PWWS  --pretrained_model_path (target model pth file path) --ball_path (your GBS saved path，such as: `gb_data/AGNEWS_LSTM_ballData_.npy`) --k 20`
 For Bert Series:
-`python textattack.py --model Bert --dataset AGNEWS --attack_method PWWS --pretrained_model_path (target model pth file path) --k 20 `
+`python textattack.py --model Bert --dataset AGNEWS --attack_method PWWS --pretrained_model_path (target model pth file path) --ball_path (your GBS saved path，such as: `gb_data/AGNEWS_Bert_ballData_.npy`) --k 20 `
 
 # parameters
 
 experiment setting are in file `config.py`
+
+# ablation experiment
+
+## mertic leaning
+    for classical models:
+        nohup python train_ablation_metricLearning.py --model LSTM --dataset YAHOO  --batch_size 128 --augment_num 5 &
+    
+    for bert series:
+        nohup python train_ablation_metricLearning——Bert.py --model Bert --dataset AGNEWS  --batch_size 128 --augment_num 5 &
+## data augment
